@@ -318,6 +318,8 @@ private:
             _viewer->getCamera()->setGraphicsContext(graphicsContext);
             _viewer->getCamera()->setViewport(new osg::Viewport(0, 0, traits->width, traits->height));
             _viewer->getCamera()->setProjectionMatrixAsPerspective(60.0, (double)traits->width/(double)traits->height, 0.1, 1000.0);
+            _viewer->getCamera()->setDrawBuffer(GL_BACK);
+            _viewer->getCamera()->setReadBuffer(GL_BACK);
         }
     }
     
@@ -337,7 +339,7 @@ private:
     _root->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF | osg::StateAttribute::OVERRIDE);
     
     //load and attach scene model
-    osg::ref_ptr<osg::Node> model = osgDB::readNodeFile(osgDB::findDataFile("lz.osg"));
+    osg::ref_ptr<osg::Node> model = osgDB::readRefNodeFile(osgDB::findDataFile("lz.osg"));
     if (!model) {
         osg::Geode* geode = new osg::Geode();
         osg::ShapeDrawable* drawable = new osg::ShapeDrawable(new osg::Box(osg::Vec3(0,0,0), 1));

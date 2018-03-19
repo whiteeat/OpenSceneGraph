@@ -1,3 +1,15 @@
+#
+# OpenSceneGraph CMake build file
+#
+SET(OPENSCENEGRAPH_MAJOR_VERSION 3)
+SET(OPENSCENEGRAPH_MINOR_VERSION 5)
+SET(OPENSCENEGRAPH_PATCH_VERSION 10)
+SET(OPENSCENEGRAPH_SOVERSION 155)
+
+
+# set to 0 when not a release candidate, non zero means that any generated
+# git tags will be treated as release candidates of given number
+SET(OPENSCENEGRAPH_RELEASE_CANDIDATE 0)
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -64,9 +76,9 @@ IF(APPLE AND NOT ANDROID)
     #set iphone arch and flags taken from http://sites.google.com/site/michaelsafyan/coding/resources/how-to-guides/cross-compile-for-the-iphone/how-to-cross-compile-for-the-iphone-using-cmake
     IF(OSG_BUILD_PLATFORM_IPHONE)
       IF(${IPHONE_VERSION_MIN} LESS "7.0")
-	SET(CMAKE_OSX_ARCHITECTURES "armv6;armv7" CACHE STRING "Build architectures for iOS" FORCE)
+        SET(CMAKE_OSX_ARCHITECTURES "armv6;armv7" CACHE STRING "Build architectures for iOS" FORCE)
       ELSE()
-	SET(CMAKE_OSX_ARCHITECTURES "armv7;armv7s;arm64" CACHE STRING "Build architectures for iOS" FORCE)
+        SET(CMAKE_OSX_ARCHITECTURES "armv7;armv7s;arm64" CACHE STRING "Build architectures for iOS" FORCE)
       ENDIF()
 
     ELSE()
@@ -112,15 +124,6 @@ IF(APPLE AND NOT ANDROID)
 ENDIF()
 
 PROJECT(OpenSceneGraph)
-
-SET(OPENSCENEGRAPH_MAJOR_VERSION 3)
-SET(OPENSCENEGRAPH_MINOR_VERSION 5)
-SET(OPENSCENEGRAPH_PATCH_VERSION 8)
-SET(OPENSCENEGRAPH_SOVERSION 152)
-
-# set to 0 when not a release candidate, non zero means that any generated
-# git tags will be treated as release candidates of given number
-SET(OPENSCENEGRAPH_RELEASE_CANDIDATE 0)
 
 SET(OPENSCENEGRAPH_VERSION ${OPENSCENEGRAPH_MAJOR_VERSION}.${OPENSCENEGRAPH_MINOR_VERSION}.${OPENSCENEGRAPH_PATCH_VERSION})
 
@@ -260,6 +263,8 @@ IF(APPLE)
             SET (IPHONE_SDKROOT "${IPHONE_DEVROOT}/SDKs/iPhoneSimulator${IPHONE_SDKVER}.sdk")
         ENDIF()
 
+        SET (IPHONE_ENABLE_BITCODE "NO" CACHE STRING "IOS Enable Bitcode")
+
         # Apple iOS: Find OpenGLES
         FIND_LIBRARY(OPENGLES_LIBRARY OpenGLES)
     ELSE ()
@@ -341,6 +346,14 @@ ENDIF()
 
 
 IF(WIN32 AND NOT ANDROID)
+    OPTION(OSG_DETERMINE_WIN_VERSION "Wheter to automatically determine current Windows version" ON)
+
+    IF(OSG_DETERMINE_WIN_VERSION)
+        # Check window version
+        INCLUDE (OsgDetermineWinVersion)
+        get_WIN32_WINNT(WIN_VERSION)
+        ADD_DEFINITIONS(-D_WIN32_WINNT=${WIN_VERSION})
+    ENDIF(OSG_DETERMINE_WIN_VERSION)
 
     IF(MSVC)
         # This option is to enable the /MP switch for Visual Studio 2005 and above compilers
@@ -468,7 +481,7 @@ OPTION(OSG_PROVIDE_READFILE "Set to ON for include/osgDB/ReadFile to provide the
 OPTION(OSG_USE_REF_PTR_IMPLICIT_OUTPUT_CONVERSION "Set to ON to use the ref_ptr<> T* operator() output conversion. " ON)
 OPTION(OSG_USE_REF_PTR_SAFE_DEREFERENCE "Set to ON to throw an exception whenever ref_ptr<> is dereferenced or called. " OFF)
 
-OPTION(OSG_ENVVAR_SUPPORTED "Set to ON to build OpenSceneGraph with the OSG_ENVVAR_SUPPOERTED #define enabled to enable use of getenv() related functions." ON)
+OPTION(OSG_ENVVAR_SUPPORTED "Set to ON to build OpenSceneGraph with the #define OSG_ENVVAR_SUPPORTED, found in include/osg/Config, to enable use of getenv() related functions." ON)
 
 
 

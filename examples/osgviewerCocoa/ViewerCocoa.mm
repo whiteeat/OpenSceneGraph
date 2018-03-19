@@ -297,6 +297,10 @@ static void Internal_SetAlpha(NSBitmapImageRep *imageRep, unsigned char alpha_va
     osg::DisplaySettings::instance()->setMaxNumberOfGraphicsContexts(1);
 #endif // VIEWER_USE_SHARED_CONTEXTS
 
+    // set the draw and read buffers up for a double buffered window with rendering going to back buffer
+    theViewer->getCamera()->setDrawBuffer(GL_BACK);
+    theViewer->getCamera()->setReadBuffer(GL_BACK);
+
     // Cocoa follows the same coordinate convention as OpenGL. osgViewer's default is inverted.
     theViewer->getEventQueue()->getCurrentEventState()->setMouseYOrientation(osgGA::GUIEventAdapter::Y_INCREASING_UPWARDS);
     // Use a trackball manipulator...matches nicely with the Mighty Mouse Scrollball.
@@ -1193,7 +1197,7 @@ A -respondsToSelector: check has been used to provide compatibility with previou
 //        int number_of_files = [file_names count];
         // Exercise for the reader: Try loading all files in the array
         NSString* single_file = [file_names objectAtIndex:0];
-        osg::ref_ptr<osg::Node> loaded_model = osgDB::readNodeFile([single_file fileSystemRepresentation]);
+        osg::ref_ptr<osg::Node> loaded_model = osgDB::readRefNodeFile([single_file fileSystemRepresentation]);
         if(!loaded_model)
         {
             NSLog(@"File: %@ failed to load", single_file);
@@ -1212,7 +1216,7 @@ A -respondsToSelector: check has been used to provide compatibility with previou
             return NO;
         }
         NSString* file_path = [file_url path];
-        osg::ref_ptr<osg::Node> loaded_model = osgDB::readNodeFile([file_path fileSystemRepresentation]);
+        osg::ref_ptr<osg::Node> loaded_model = osgDB::readRefNodeFile([file_path fileSystemRepresentation]);
         if(!loaded_model)
         {
             NSLog(@"URL: %@ failed to load, %@", file_url, file_path);

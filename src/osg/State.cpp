@@ -18,7 +18,7 @@
 #include <osg/Drawable>
 #include <osg/ApplicationUsage>
 #include <osg/ContextData>
-#include <osg/EnvVar>
+#include <osg/os_utils>
 
 #include <sstream>
 #include <algorithm>
@@ -50,6 +50,9 @@ State::State():
     _shaderCompositionDirty = true;
     _shaderComposer = new ShaderComposer;
     _currentShaderCompositionProgram = 0L;
+
+    _drawBuffer = GL_INVALID_ENUM; // avoid the lazy state mechanism from ignoreing the first call to State::glDrawBuffer() to make sure it's always passed to OpenGL
+    _readBuffer = GL_INVALID_ENUM; // avoid the lazy state mechanism from ignoreing the first call to State::glReadBuffer() to make sure it's always passed to OpenGL
 
     _identity = new osg::RefMatrix(); // default RefMatrix constructs to identity.
     _initialViewMatrix = _identity;
@@ -202,8 +205,8 @@ void State::initializeExtensionProcs()
         _forceVertexArrayObject = true;
     }
 
-    OSG_NOTICE<<"_forceVertexArrayObject = "<<_forceVertexArrayObject<<std::endl;
-    OSG_NOTICE<<"_forceVertexBufferObject = "<<_forceVertexBufferObject<<std::endl;
+    OSG_INFO<<"osg::State::initializeExtensionProcs() _forceVertexArrayObject = "<<_forceVertexArrayObject<<std::endl;
+    OSG_INFO<<"                                       _forceVertexBufferObject = "<<_forceVertexBufferObject<<std::endl;
 
 
     // Set up up global VertexArrayState object
@@ -211,7 +214,7 @@ void State::initializeExtensionProcs()
     _globalVertexArrayState->assignAllDispatchers();
     // if (_useVertexArrayObject) _globalVertexArrayState->generateVertexArrayObject();
 
-    setCurrentToGloabalVertexArrayState();
+    setCurrentToGlobalVertexArrayState();
 
 
     setGLExtensionFuncPtr(_glClientActiveTexture,"glClientActiveTexture","glClientActiveTextureARB");
@@ -432,6 +435,28 @@ void State::reset()
         us.uniformVec.clear();
     }
 
+}
+
+void State::glDrawBuffer(GLenum buffer)
+{
+    if (_drawBuffer!=buffer)
+    {
+        #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE)
+        ::glDrawBuffer(buffer);
+        #endif
+        _drawBuffer=buffer;
+    }
+}
+
+void State::glReadBuffer(GLenum buffer)
+{
+    if (_readBuffer!=buffer)
+    {
+        #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE) && !defined(OSG_GLES3_AVAILABLE)
+        ::glReadBuffer(buffer);
+        #endif
+        _readBuffer=buffer;
+    }
 }
 
 void State::setInitialViewMatrix(const osg::RefMatrix* matrix)
@@ -1249,15 +1274,19 @@ namespace State_Utils
             if (str[pos]=='"' || str[pos]=='\'')
             {
                 std::string::size_type start_quote = pos;
-                ++pos;
+                ++pos; // skip over first quote
                 pos = str.find(str[start_quote], pos);
+
+                if (pos!=std::string::npos)
+                {
+                    ++pos; // skip over second quote
+                }
             }
             else
             {
                 std::string::size_type start_var = pos;
                 ++pos;
                 pos = str.find_first_not_of("ABCDEFGHIJKLMNOPQRTSUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_", pos);
-                std::string var_str;
                 if (pos != std::string::npos)
                 {
 

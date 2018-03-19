@@ -405,6 +405,7 @@ int *numComponents_ret)
                         break;
                     default:
                         tgaerror = ERR_UNSUPPORTED;
+                        delete [] formattedMap;
                         return NULL; /* unreachable code - (depth < 1 || depth > 4) rejected by "check for reasonable values in case this is not a tga file" near the start of this function*/
                     }
 
@@ -415,8 +416,7 @@ int *numComponents_ret)
                 dest += lineoffset;
             }
 
-            if (formattedMap)
-                delete[] formattedMap;
+            delete [] formattedMap;
         }
         break;
         case 2:                  /* RGB, uncompressed */
@@ -564,15 +564,16 @@ class ReaderWriterTGA : public osgDB::ReaderWriter
             int t = height_ret;
             int r = 1;
 
-            int internalFormat = numComponents_ret;
-
             unsigned int pixelFormat =
                 numComponents_ret == 1 ? GL_LUMINANCE :
-            numComponents_ret == 2 ? GL_LUMINANCE_ALPHA :
-            numComponents_ret == 3 ? GL_RGB :
-            numComponents_ret == 4 ? GL_RGBA : (GLenum)-1;
+                numComponents_ret == 2 ? GL_LUMINANCE_ALPHA :
+                numComponents_ret == 3 ? GL_RGB :
+                numComponents_ret == 4 ? GL_RGBA : (GLenum)-1;
+
+            int internalFormat = pixelFormat;
 
             unsigned int dataType = GL_UNSIGNED_BYTE;
+
 
             osg::Image* pOsgImage = new osg::Image;
             pOsgImage->setImage(s,t,r,

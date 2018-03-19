@@ -152,19 +152,19 @@ class OSG_EXPORT State : public Referenced
             _extensionMap[id] = ptr;
         }
 
-        /* Set whether shader composition is enabled.*/
+        /* deprecated.*/
         void setShaderCompositionEnabled(bool flag) { _shaderCompositionEnabled = flag; }
 
-        /* Get whether shader composition is enabled.*/
+        /* deprecated.*/
         bool getShaderCompositionEnabled() const { return _shaderCompositionEnabled; }
 
-        /** Set the ShaderComposor object that implements shader composition.*/
+        /** deprecated.*/
         void setShaderComposer(ShaderComposer* sc) { _shaderComposer = sc; }
 
-        /** Get the ShaderComposor object.*/
+        /** deprecated.*/
         ShaderComposer* getShaderComposer() { return _shaderComposer.get(); }
 
-        /** Get the const ShaderComposor object.*/
+        /** deprecated.*/
         const ShaderComposer* getShaderComposer() const { return _shaderComposer.get(); }
 
         /** Get the unform list in which to inject any uniforms that StateAttribute::apply(State&) methods provide.*/
@@ -302,6 +302,14 @@ class OSG_EXPORT State : public Referenced
 
         /** Apply any shader composed state.*/
         void applyShaderComposition();
+
+
+        void glDrawBuffer(GLenum buffer);
+        GLenum getDrawBuffer() const { return _drawBuffer; }
+
+        void glReadBuffer(GLenum buffer);
+        GLenum getReadBuffer() const { return _readBuffer; }
+
 
         /** Set whether a particular OpenGL mode is valid in the current graphics context.
           * Use to disable OpenGL modes that are not supported by current graphics drivers/context.*/
@@ -528,7 +536,7 @@ class OSG_EXPORT State : public Referenced
         struct SetCurrentVertexArrayStateProxy
         {
             SetCurrentVertexArrayStateProxy(osg::State& state, VertexArrayState* vas):_state(state) { _state.setCurrentVertexArrayState(vas); }
-            ~SetCurrentVertexArrayStateProxy() { _state.setCurrentToGloabalVertexArrayState(); }
+            ~SetCurrentVertexArrayStateProxy() { _state.setCurrentToGlobalVertexArrayState(); }
             osg::State& _state;
         };
 
@@ -538,8 +546,8 @@ class OSG_EXPORT State : public Referenced
         /** Get the CurrentVetexArrayState object that take which vertex arrays are bound.*/
         VertexArrayState* getCurrentVertexArrayState() const { return _vas; }
 
-        /** Set the getCurrentVertexArrayState to the GloabalVertexArrayState.*/
-        void setCurrentToGloabalVertexArrayState() { _vas = _globalVertexArrayState.get(); }
+        /** Set the getCurrentVertexArrayState to the GlobalVertexArrayState.*/
+        void setCurrentToGlobalVertexArrayState() { _vas = _globalVertexArrayState.get(); }
 
 
         /** disable the vertex, normal, color, tex coords, secondary color, fog coord and index arrays.*/
@@ -1078,6 +1086,9 @@ class OSG_EXPORT State : public Referenced
         StateSet::UniformList           _currentShaderCompositionUniformList;
 
         ref_ptr<FrameStamp>         _frameStamp;
+
+        GLenum                      _drawBuffer;
+        GLenum                      _readBuffer;
 
         ref_ptr<const RefMatrix>    _identity;
         ref_ptr<const RefMatrix>    _initialViewMatrix;

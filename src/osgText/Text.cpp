@@ -157,7 +157,7 @@ osg::StateSet* Text::createStateSet()
 
     if (_shaderTechnique>GREYSCALE)
     {
-        defineList["SIGNED_DISTNACE_FIELD"] = osg::StateSet::DefinePair("1", osg::StateAttribute::ON);
+        defineList["SIGNED_DISTANCE_FIELD"] = osg::StateSet::DefinePair("1", osg::StateAttribute::ON);
     }
 
 #if 0
@@ -674,17 +674,17 @@ void Text::computeGlyphRepresentation()
                         {
                             case LEFT_TO_RIGHT:
                                 cursor.x() += glyph->getHorizontalAdvance() * wr;
-                                _textBB.expandBy(osg::Vec3(minc.x(), minc.y(), 0.0f)); //lower left corner
-                                _textBB.expandBy(osg::Vec3(maxc.x(), maxc.y(), 0.0f)); //upper right corner
+                                _textBB.expandBy(osg::Vec3(local.x(), local.y(), 0.0f)); //lower left corner
+                                _textBB.expandBy(osg::Vec3(local.x()+width, local.y()+height, 0.0f)); //upper right corner
                                 break;
                             case VERTICAL:
                                 cursor.y() -= glyph->getVerticalAdvance() * hr;
-                                _textBB.expandBy(osg::Vec3(minc.x(),maxc.y(),0.0f)); //upper left corner
-                                _textBB.expandBy(osg::Vec3(maxc.x(),minc.y(),0.0f)); //lower right corner
+                                _textBB.expandBy(osg::Vec3(local.x(), local.y()+height, 0.0f)); //upper left corner
+                                _textBB.expandBy(osg::Vec3(local.x()+width, local.y(), 0.0f)); //lower right corner
                                 break;
                             case RIGHT_TO_LEFT:
-                                _textBB.expandBy(osg::Vec3(maxc.x(),minc.y(),0.0f)); //lower right corner
-                                _textBB.expandBy(osg::Vec3(minc.x(),maxc.y(),0.0f)); //upper left corner
+                                _textBB.expandBy(osg::Vec3(local.x()+width, local.y(), 0.0f)); //lower right corner
+                                _textBB.expandBy(osg::Vec3(local.x(), local.y()+height, 0.0f)); //upper left corner
                                 break;
                         }
                     }
@@ -1250,9 +1250,13 @@ void Text::drawImplementation(osg::State& state, const osg::Vec4& colorMultiplie
 
 void Text::accept(osg::Drawable::ConstAttributeFunctor& af) const
 {
-    if (_coords.valid() )
+    if (_coords.valid() && !_coords->empty())
     {
         af.apply(osg::Drawable::VERTICES, _coords->size(), &(_coords->front()));
+    }
+
+    if (_texcoords.valid() && !_texcoords->empty())
+    {
         af.apply(osg::Drawable::TEXTURE_COORDS_0, _texcoords->size(), &(_texcoords->front()));
     }
 }
@@ -1285,20 +1289,35 @@ void Text::accept(osg::PrimitiveFunctor& pf) const
         if (glyphquad._primitives.valid())
         {
             const osg::DrawElementsUShort* drawElementsUShort = dynamic_cast<const osg::DrawElementsUShort*>(glyphquad._primitives.get());
-            if (drawElementsUShort)
+            if (drawElementsUShort && drawElementsUShort->size() > 0)
             {
                 pf.drawElements(GL_TRIANGLES, drawElementsUShort->size(), &(drawElementsUShort->front()));
             }
             else
             {
                 const osg::DrawElementsUInt* drawElementsUInt = dynamic_cast<const osg::DrawElementsUInt*>(glyphquad._primitives.get());
-                if (drawElementsUInt)
+                if (drawElementsUInt && drawElementsUInt->size() > 0)
                 {
                     pf.drawElements(GL_TRIANGLES, drawElementsUInt->size(), &(drawElementsUInt->front()));
                 }
             }
         }
     }
+}
+
+bool Text::getCharacterCorners(unsigned int index, osg::Vec3& bottomLeft, osg::Vec3& bottomRight, osg::Vec3& topLeft, osg::Vec3& topRight) const
+{
+    if (!_coords.valid()) return false;
+
+    if ((index*4+4)>static_cast<unsigned int>(_coords->size())) return false;
+
+    unsigned int base = index*4;
+    topLeft = (*_coords)[base];
+    bottomLeft = (*_coords)[base+1];
+    bottomRight = (*_coords)[base+2];
+    topRight = (*_coords)[base+3];
+
+    return true;
 }
 
 void Text::resizeGLObjectBuffers(unsigned int maxSize)

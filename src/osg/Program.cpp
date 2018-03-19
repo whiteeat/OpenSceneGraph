@@ -92,8 +92,7 @@ void Program::ProgramBinary::assign(unsigned int size, const unsigned char* data
 
 Program::Program() :
     _geometryVerticesOut(1), _geometryInputType(GL_TRIANGLES),
-    _geometryOutputType(GL_TRIANGLE_STRIP),
-    _numGroupsX(0), _numGroupsY(0), _numGroupsZ(0), _feedbackmode(GL_SEPARATE_ATTRIBS)
+    _geometryOutputType(GL_TRIANGLE_STRIP), _feedbackmode(GL_SEPARATE_ATTRIBS)
 {
 }
 
@@ -133,10 +132,6 @@ Program::Program(const Program& rhs, const osg::CopyOp& copyop):
     _geometryInputType = rhs._geometryInputType;
     _geometryOutputType = rhs._geometryOutputType;
 
-    _numGroupsX = rhs._numGroupsX;
-    _numGroupsY = rhs._numGroupsY;
-    _numGroupsZ = rhs._numGroupsZ;
-
     _feedbackmode=rhs._feedbackmode;
     _feedbackout=rhs._feedbackout;
 }
@@ -172,15 +167,6 @@ int Program::compare(const osg::StateAttribute& sa) const
 
     if( _geometryOutputType < rhs._geometryOutputType ) return -1;
     if( rhs._geometryOutputType < _geometryOutputType ) return 1;
-
-    if( _numGroupsX < rhs._numGroupsX ) return -1;
-    if( rhs._numGroupsX < _numGroupsX ) return 1;
-
-    if( _numGroupsY < rhs._numGroupsY ) return -1;
-    if( rhs._numGroupsY < _numGroupsY ) return 1;
-
-    if( _numGroupsZ < rhs._numGroupsZ ) return -1;
-    if( rhs._numGroupsZ < _numGroupsZ ) return 1;
 
     if(_feedbackout<rhs._feedbackout) return -1;
     if(_feedbackmode<rhs._feedbackmode) return -1;
@@ -384,20 +370,6 @@ GLint Program::getParameter( GLenum pname ) const
     }
     OSG_WARN << "getParameter invalid param " << pname << std::endl;
     return 0;
-}
-
-void Program::setComputeGroups( GLint numGroupsX, GLint numGroupsY, GLint numGroupsZ )
-{
-    _numGroupsX = numGroupsX;
-    _numGroupsY = numGroupsY;
-    _numGroupsZ = numGroupsZ;
-}
-
-void Program::getComputeGroups( GLint& numGroupsX, GLint& numGroupsY, GLint& numGroupsZ ) const
-{
-    numGroupsX = _numGroupsX;
-    numGroupsY = _numGroupsY;
-    numGroupsZ = _numGroupsZ;
 }
 
 void Program::addBindAttribLocation( const std::string& name, GLuint index )
@@ -684,7 +656,15 @@ Program::PerContextProgram::PerContextProgram(const Program* program, unsigned i
     {
         _extensions = GLExtensions::Get( _contextID, true );
         _glProgramHandle = _extensions->glCreateProgram();
-        _ownsProgramHandle = true;
+
+        if (_glProgramHandle)
+        {
+            _ownsProgramHandle = true;
+        }
+        else
+        {
+            OSG_WARN << "Unable to create osg::Program \"" << _program->getName() << "\"" << " contextID=" << _contextID <<  std::endl;
+        }
     }
     requestLink();
 }
@@ -709,6 +689,8 @@ void Program::PerContextProgram::linkProgram(osg::State& state)
 {
     if( ! _needsLink ) return;
     _needsLink = false;
+
+    if (!_glProgramHandle) return;
 
     OSG_INFO << "Linking osg::Program \"" << _program->getName() << "\""
              << " id=" << _glProgramHandle
@@ -737,7 +719,7 @@ void Program::PerContextProgram::linkProgram(osg::State& state)
     if (!_loadedBinary)
     {
         const GLsizei shaderMaxCount = 20;
-        GLsizei shadersCount;
+        GLsizei shadersCount = 0;
         GLuint shaderObjectHandle[shaderMaxCount];
         _extensions->glGetAttachedShaders(_glProgramHandle, shaderMaxCount, &shadersCount, shaderObjectHandle);
 
@@ -1063,6 +1045,8 @@ void Program::PerContextProgram::linkProgram(osg::State& state)
 
 bool Program::PerContextProgram::validateProgram()
 {
+    if (!_glProgramHandle) return false;
+
     GLint validated = GL_FALSE;
     _extensions->glValidateProgram( _glProgramHandle );
     _extensions->glGetProgramiv( _glProgramHandle, GL_VALIDATE_STATUS, &validated );
@@ -1085,11 +1069,15 @@ bool Program::PerContextProgram::validateProgram()
 
 bool Program::PerContextProgram::getInfoLog( std::string& infoLog ) const
 {
+    if (!_glProgramHandle) return false;
+
     return _extensions->getProgramInfoLog( _glProgramHandle, infoLog );
 }
 
 Program::ProgramBinary* Program::PerContextProgram::compileProgramBinary(osg::State& state)
 {
+    if (!_glProgramHandle) return 0;
+
     linkProgram(state);
     GLint binaryLength = 0;
     _extensions->glGetProgramiv( _glProgramHandle, GL_PROGRAM_BINARY_LENGTH, &binaryLength );
@@ -1107,9 +1095,7 @@ Program::ProgramBinary* Program::PerContextProgram::compileProgramBinary(osg::St
 
 void Program::PerContextProgram::useProgram() const
 {
+    if (!_glProgramHandle) return;
+
     _extensions->glUseProgram( _glProgramHandle  );
-    if ( _program->_numGroupsX>0 && _program->_numGroupsY>0 && _program->_numGroupsZ>0 )
-    {
-        _extensions->glDispatchCompute( _program->_numGroupsX, _program->_numGroupsY, _program->_numGroupsZ );
-    }
 }

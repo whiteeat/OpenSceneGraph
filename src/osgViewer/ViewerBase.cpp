@@ -18,7 +18,7 @@
 #include <osgViewer/View>
 #include <osgViewer/Renderer>
 
-#include <osg/EnvVar>
+#include <osg/os_utils>
 #include <osg/io_utils>
 
 #include <osg/TextureCubeMap>
@@ -86,7 +86,8 @@ void ViewerBase::configureAffinity()
 {
     unsigned int numProcessors = OpenThreads::GetNumberOfProcessors();
 
-    OSG_NOTICE<<"ViewerBase::configureAffinity() numProcessors="<<numProcessors<<std::endl;
+    OSG_INFO<<"ViewerBase::configureAffinity() numProcessors="<<numProcessors<<std::endl;
+
     if (numProcessors==1) return;
 
     typedef std::vector<unsigned int> AvailableProcessors;
@@ -186,7 +187,7 @@ void ViewerBase::configureAffinity()
             if ((*itr)->getDatabasePager()) databasePagers.push_back((*itr)->getDatabasePager());
         }
 
-        OSG_NOTICE<<"  databasePagers = "<<databasePagers.size()<<std::endl;
+        OSG_INFO<<"  databasePagers = "<<databasePagers.size()<<std::endl;
 
         availableProcessor = availableProcessors[availableProcessor % availableProcessors.size()];
 
@@ -204,11 +205,13 @@ void ViewerBase::setThreadingModel(ThreadingModel threadingModel)
 {
     if (_threadingModel == threadingModel) return;
 
+    bool needSetUpThreading = _threadsRunning;
+
     if (_threadsRunning) stopThreading();
 
     _threadingModel = threadingModel;
 
-    setUpThreading();
+    if (needSetUpThreading) setUpThreading();
 }
 
 ViewerBase::ThreadingModel ViewerBase::suggestBestThreadingModel()
