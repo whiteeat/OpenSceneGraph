@@ -49,6 +49,7 @@ int main(int argc, char** argv)
     arguments.getApplicationUsage()->addCommandLineOption("--speed <factor>","Speed factor for animation playing (1 == normal speed).");
     arguments.getApplicationUsage()->addCommandLineOption("--device <device-name>","add named device to the viewer");
     arguments.getApplicationUsage()->addCommandLineOption("--stats","print out load and compile timing stats");
+    arguments.getApplicationUsage()->addCommandLineOption("--screen-stats <level>","enable on screen stats at start up, 0 is off, 1 is frame rate, 2 adds traversal stats, 3 adds view stats, 4 add scene stats");
 
     osgViewer::Viewer viewer(arguments);
 
@@ -73,6 +74,9 @@ int main(int argc, char** argv)
     }
 
     bool printStats = arguments.read("--stats");
+
+    int onScreenStatsLevel = 0;
+    while(arguments.read("--screen-stats", onScreenStatsLevel) || arguments.read("--ss", onScreenStatsLevel)) {}
 
     std::string url, username, password;
     while(arguments.read("--login",url, username, password))
@@ -166,6 +170,7 @@ int main(int argc, char** argv)
         std::cout<<"Load time "<<loadTime<<"ms"<<std::endl;
 
         viewer.getStats()->collectStats("compile", true);
+
     }
 
 
@@ -187,6 +192,12 @@ int main(int argc, char** argv)
     viewer.setSceneData(loadedModel);
 
     viewer.realize();
+
+    if (onScreenStatsLevel)
+    {
+        // to enable on screen stats we have to pass the 's' key event to viewer to toggle on the StatsHandler as this class doesn't yet have public interface for this.
+        for(int i=0; i<onScreenStatsLevel; ++i) viewer.getEventQueue()->keyPress('s');
+    }
 
     return viewer.run();
 
