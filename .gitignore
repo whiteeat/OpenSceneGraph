@@ -99,3 +99,5 @@ _CPack_Packages/
 #packages
 *.tar.gz
 *.zip
+/3rdparty/
+/build/
